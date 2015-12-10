@@ -17,8 +17,7 @@ public class Main {
     private static final List<TestDate> testDates = new ArrayList<>();
 
     static {
-        /*
-         // Starting date only, with single and double month-digits.
+        // Starting date only, with single and double month-digits.
         testDates.add(new TestDate("10/10/2015", "10/10/2015", "MM/dd/yyyy"));
         testDates.add(new TestDate("8/27/2015", "8/27/2015", "M/dd/yyyy"));
 
@@ -31,18 +30,18 @@ public class Main {
 
         // Starting date only, year first.
         testDates.add(new TestDate("2015-11-12", "2015-11-12", "yyyy-MM-dd"));
-        */
+
         // Starting date only, American style.
         testDates.add(new TestDate("December 1, 2015", "December 1, 2015", "MMMMM d, yyyy"));
-        /*
-         // Starting date only, with day of week (which is ignored in parsing).
-         testDates.add(new TestDate("Friday, Nov. 13, 2015", "Nov. 13, 2015", "MMM. d, yyyy"));
+
+        // Starting date only, with day of week (which is ignored in parsing).
+        testDates.add(new TestDate("Friday, Nov. 13, 2015", "Nov. 13, 2015", "MMM. d, yyyy"));
         testDates.add(new TestDate("Fri Nov 13 2015", "Nov 13 2015", "MMM d yyyy"));
         testDates.add(new TestDate("Friday, November 20, 2015", "November 20, 2015", "MMMMM d, yyyy"));
 
         // Starting date only, with starting time.
-        testDates.add(new TestDate("Tuesday, November 17, 2015 11:00 am", "November 20, 2015 11:00 am", "MMMMM d, yyyy hh:mm a"));
-        testDates.add(new TestDate("Tuesday, November 17, 2015 11:00 AM", "November 20, 2015 11:00 AM", "MMMMM d, yyyy hh:mm a"));
+        testDates.add(new TestDate("Tuesday, November 17, 2015 11:00 am", "November 17, 2015 11:00 am", "MMMMM d, yyyy hh:mm a"));
+        testDates.add(new TestDate("Tuesday, November 17, 2015 11:00 AM", "November 17, 2015 11:00 AM", "MMMMM d, yyyy hh:mm a"));
         testDates.add(new TestDate("Friday, December 18, 2015, 6am", "December 18, 2015, 6am", "MMMMM d, yyyy, hha"));
         testDates.add(new TestDate("Friday, November 13, 2015 noon", "November 13, 2015 12pm", "MMMMM d, yyyy hha"));
 
@@ -58,7 +57,6 @@ public class Main {
         // Periodic with starting and ending dates.
         // XXX we do not yet support periodicity in our date spans.
         testDates.add(new TestDate("Every Wednesday from September 9, 2015 to November 18, 2015", "September 9, 2015", "MMMMM d, yyyy", "November 18, 2015", "MMMMM d, yyyy"));
-         */
     }
 
     private static void runTests() {
@@ -67,11 +65,6 @@ public class Main {
                 System.out.println("TESTING: " + td.dateSpec);
                 ANTLRInputStream inStream = new ANTLRInputStream(new StringReader(td.dateSpec));
                 DateRangeLexer lexer = new DateRangeLexer(inStream);
-                /*
-                 for (Token tkn : lexer.getAllTokens()) {
-                    System.out.println("TOKEN: " + tkn.getText());
-                }
-                */
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 DateRangeParser parser = new DateRangeParser(tokens);
                 ParserRuleContext tree = parser.range();
@@ -85,14 +78,22 @@ public class Main {
                     startDatePassed = extractor.getStartDate().equals(td.expectedStartDate);
                     if (startDatePassed) {
                         System.out.println("startDate PASSED: " + td.expectedStartDate + " was matched");
+                    } else {
+                        System.out.println("startDate FAILED: actualDate " + extractor.getStartDate() + "; expectedDate=" + td.expectedStartDate);
                     }
                 }
 
                 boolean endDatePassed = true;
-                if (extractor.getEndDate() != null && td.expectedEndDate != null) {
-                    endDatePassed = extractor.getEndDate().equals(td.expectedEndDate);
-                    if (endDatePassed) {
-                        System.out.println("endDate PASSED: " + td.expectedEndDate + " was matched");
+                if (td.expectedEndDate != null) {
+                    if (extractor.getEndDate() == null) {
+                        System.out.println("endDate FAILED: actualDate " + extractor.getEndDate() + "; expectedDate=" + td.expectedEndDate);
+                    } else {
+                        endDatePassed = extractor.getEndDate().equals(td.expectedEndDate);
+                        if (endDatePassed) {
+                            System.out.println("endDate PASSED: " + td.expectedEndDate + " was matched");
+                        } else {
+                            System.out.println("endDate FAILED: actualDate " + extractor.getEndDate() + "; expectedDate=" + td.expectedEndDate);
+                        }
                     }
                 }
 

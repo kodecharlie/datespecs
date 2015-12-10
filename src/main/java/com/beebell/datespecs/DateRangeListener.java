@@ -208,6 +208,36 @@ public interface DateRangeListener extends ParseTreeListener {
 	 */
 	void exitSecond(DateRangeParser.SecondContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link DateRangeParser#weekDay}.
+	 * @param ctx the parse tree
+	 */
+	void enterWeekDay(DateRangeParser.WeekDayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link DateRangeParser#weekDay}.
+	 * @param ctx the parse tree
+	 */
+	void exitWeekDay(DateRangeParser.WeekDayContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link DateRangeParser#shrtDay}.
+	 * @param ctx the parse tree
+	 */
+	void enterShrtDay(DateRangeParser.ShrtDayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link DateRangeParser#shrtDay}.
+	 * @param ctx the parse tree
+	 */
+	void exitShrtDay(DateRangeParser.ShrtDayContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link DateRangeParser#longDay}.
+	 * @param ctx the parse tree
+	 */
+	void enterLongDay(DateRangeParser.LongDayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link DateRangeParser#longDay}.
+	 * @param ctx the parse tree
+	 */
+	void exitLongDay(DateRangeParser.LongDayContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link DateRangeParser#shrtMonth}.
 	 * @param ctx the parse tree
 	 */

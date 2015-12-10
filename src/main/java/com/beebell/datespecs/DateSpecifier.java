@@ -4,6 +4,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.antlr.v4.runtime.misc.NotNull;
@@ -40,6 +42,13 @@ public class DateSpecifier extends DateRangeBaseListener {
     @Override
     public void exitRange(@NotNull DateRangeParser.RangeContext ctx) {
         states.pop();
+
+        if (this.startDate != null && this.endDate != null) {
+            // Align years.  XXX assume same year.
+            if (this.startDate.year == null && this.endDate.year != null) {
+                this.startDate.year = this.endDate.year;
+            }
+        }
     }
 
     @Override
@@ -157,6 +166,81 @@ public class DateSpecifier extends DateRangeBaseListener {
     }
 
     @Override
+    public void enterTimespan(DateRangeParser.TimespanContext ctx) {
+        states.push(ParseState.TIMESPAN);
+
+        // Populate ending date if it does not exist.
+        if (this.endDate == null) {
+            this.endDate = new DateSpecs();
+            if (this.startDate != null) {
+                this.endDate.year = this.startDate.year;
+                this.endDate.monthOfYear = this.startDate.monthOfYear;
+                this.endDate.dayOfMonth = this.startDate.dayOfMonth;
+            }
+        }
+    }
+
+    @Override
+    public void exitTimespan(DateRangeParser.TimespanContext ctx) {
+        states.pop();
+    }
+
+    @Override
+    public void enterNoon(DateRangeParser.NoonContext ctx) {
+        states.push(ParseState.HOUR);
+    }
+
+    @Override
+    public void exitNoon(DateRangeParser.NoonContext ctx) {
+        states.pop();
+
+        Deque<ParseState> savePeeks = popToStartOrEndDate(states);
+        if (states.size() > 0) {
+            switch (states.peek()) {
+                case START_DATE:
+                    this.startDate.hour = "12";
+                    this.startDate.minute = "00";
+                    this.startDate.meridian = "pm";
+                    break;
+                case END_DATE:
+                    this.endDate.hour = "12";
+                    this.endDate.minute = "00";
+                    this.endDate.meridian = "pm";
+                    break;
+            }
+        }
+        pushToRestore(states, savePeeks);
+    }
+
+    @Override
+    public void enterHour2(DateRangeParser.Hour2Context ctx) {
+        states.push(ParseState.HOUR);
+    }
+
+    @Override
+    public void exitHour2(DateRangeParser.Hour2Context ctx) {
+        states.pop();
+
+        Deque<ParseState> savePeeks = popToStartOrEndDate(states);
+        if (states.size() > 0) {
+            switch (states.peek()) {
+                case START_DATE:
+                    // Only set startDate if not already set.  Eg: 12 - 1pm.
+                    if (this.startDate.hour == null) {
+                        this.startDate.hour = ctx.getText();
+                    } else if (this.endDate != null && this.endDate.hour == null) {
+                        this.endDate.hour = ctx.getText();
+                    }
+                    break;
+                case END_DATE:
+                    this.endDate.hour = ctx.getText();
+                    break;
+            }
+        }
+        pushToRestore(states, savePeeks);
+    }
+
+    @Override
     public void enterHour(DateRangeParser.HourContext ctx) {
         states.push(ParseState.HOUR);
     }
@@ -192,7 +276,11 @@ public class DateSpecifier extends DateRangeBaseListener {
         if (states.size() > 0) {
             switch (states.peek()) {
                 case START_DATE:
-                    this.startDate.minute = ctx.getText();
+                    if (this.startDate.minute == null) {
+                        this.startDate.minute = ctx.getText();
+                    } else if (this.endDate != null && this.endDate.minute == null) {
+                        this.endDate.minute = ctx.getText();
+                    }
                     break;
                 case END_DATE:
                     this.endDate.minute = ctx.getText();
@@ -215,10 +303,62 @@ public class DateSpecifier extends DateRangeBaseListener {
         if (states.size() > 0) {
             switch (states.peek()) {
                 case START_DATE:
-                    this.startDate.minute = ctx.getText();
+                    // XXX This logic could be improved.  Possibly we should use TOD listeners.
+                    if (this.startDate.meridian == null) {
+                        this.startDate.meridian = ctx.getText();
+                    }
+                    if (this.endDate != null) {
+                        this.endDate.meridian = ctx.getText();
+                    }
                     break;
                 case END_DATE:
-                    this.endDate.minute = ctx.getText();
+                    this.endDate.meridian = ctx.getText();
+                    break;
+            }
+        }
+        pushToRestore(states, savePeeks);
+    }
+
+    @Override
+    public void enterShrtMonth(DateRangeParser.ShrtMonthContext ctx) {
+        states.push(ParseState.MONTH_OF_YEAR);
+    }
+
+    @Override
+    public void exitShrtMonth(DateRangeParser.ShrtMonthContext ctx) {
+        states.pop();
+
+        Deque<ParseState> savePeeks = popToStartOrEndDate(states);
+        if (states.size() > 0) {
+            switch (states.peek()) {
+                case START_DATE:
+                    this.startDate.monthOfYear = shortMonthToDigits.get(ctx.getText());
+                    break;
+                case END_DATE:
+                    this.endDate.monthOfYear = shortMonthToDigits.get(ctx.getText());
+                    break;
+            }
+        }
+        pushToRestore(states, savePeeks);
+    }
+
+    @Override
+    public void enterLongMonth(DateRangeParser.LongMonthContext ctx) {
+        states.push(ParseState.MONTH_OF_YEAR);
+    }
+
+    @Override
+    public void exitLongMonth(DateRangeParser.LongMonthContext ctx) {
+        states.pop();
+
+        Deque<ParseState> savePeeks = popToStartOrEndDate(states);
+        if (states.size() > 0) {
+            switch (states.peek()) {
+                case START_DATE:
+                    this.startDate.monthOfYear = longMonthToDigits.get(ctx.getText());
+                    break;
+                case END_DATE:
+                    this.endDate.monthOfYear = longMonthToDigits.get(ctx.getText());
                     break;
             }
         }
@@ -245,6 +385,38 @@ public class DateSpecifier extends DateRangeBaseListener {
         }
     }
 
+    private static final Map<String, String> shortMonthToDigits = new HashMap<>();
+    static {
+        shortMonthToDigits.put("Jan", "01");
+        shortMonthToDigits.put("Feb", "02");
+        shortMonthToDigits.put("Mar", "03");
+        shortMonthToDigits.put("Apr", "04");
+        shortMonthToDigits.put("May", "05");
+        shortMonthToDigits.put("Jun", "06");
+        shortMonthToDigits.put("Jul", "07");
+        shortMonthToDigits.put("Aug", "08");
+        shortMonthToDigits.put("Sep", "09");
+        shortMonthToDigits.put("Oct", "10");
+        shortMonthToDigits.put("Nov", "11");
+        shortMonthToDigits.put("Dec", "12");
+    }
+
+    private static final Map<String, String> longMonthToDigits = new HashMap<>();
+    static {
+        longMonthToDigits.put("January", "01");
+        longMonthToDigits.put("February", "02");
+        longMonthToDigits.put("March", "03");
+        longMonthToDigits.put("April", "04");
+        longMonthToDigits.put("May", "05");
+        longMonthToDigits.put("June", "06");
+        longMonthToDigits.put("July", "07");
+        longMonthToDigits.put("August", "08");
+        longMonthToDigits.put("September", "09");
+        longMonthToDigits.put("October", "10");
+        longMonthToDigits.put("November", "11");
+        longMonthToDigits.put("December", "12");
+    }
+
     private static class DateSpecs {
 
         // When the UTC timestamp is set, none of the other fields matter.
@@ -260,7 +432,6 @@ public class DateSpecifier extends DateRangeBaseListener {
         /**
          * Call this method to get a <code>java.util.Date<code> for either the
          * startDate or endDate parsed from the string passed into the parser.
-         *
          *
          * @param other is an instance of <code>DateSpecs</code>; if the current
          * object describes the startDate, then <code>other</code> describes the
@@ -303,6 +474,7 @@ public class DateSpecifier extends DateRangeBaseListener {
             SimpleDateFormat sdf = new SimpleDateFormat(format);
             java.util.Date retDate = null;
             try {
+                System.out.println("dateString=" + dateString);
                 retDate = sdf.parse(dateString);
             } catch (ParseException ex) {
                 Logger.getLogger(DateSpecifier.class.getName()).log(Level.SEVERE, "Could not parse date string " + dateString, ex);
@@ -322,6 +494,7 @@ public class DateSpecifier extends DateRangeBaseListener {
         DAY_OF_MONTH,
         HOUR,
         MINUTE,
-        MERIDIAN
+        MERIDIAN,
+        TIMESPAN
     }
 }

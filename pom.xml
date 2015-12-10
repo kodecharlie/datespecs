@@ -16,10 +16,6 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <targetPath>.</targetPath>
-                <excludes>
-                    <exclude>**/*.properties</exclude>
-                    <exclude>**/log4j2*.xml</exclude>
-                </excludes>
             </resource>
         </resources>
         <plugins>
@@ -31,6 +27,7 @@
                     <arguments>
                         <argument>-package</argument>
                         <argument>com.beebell.datespecs</argument>
+                        <argument>-atn</argument>
                     </arguments>
                 </configuration>
             </plugin>
@@ -48,4 +45,39 @@
             <version>4.5.1-1</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>testrig</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-cp</argument>
+                                <classpath/>
+                                <argument>org.antlr.v4.gui.TestRig</argument>
+                                <argument>com.beebell.datespecs.DateRange</argument>
+                                <argument>range</argument>
+                                <argument>-tokens</argument>
+                                <argument>testrig.in</argument>
+                                <argument>-gui</argument>
+                            </arguments>
+                            <classpathScope>runtime</classpathScope>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
