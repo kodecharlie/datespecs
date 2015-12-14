@@ -61,4 +61,4 @@ longDay   : 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday
 shrtMonth : 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec' ;
 longMonth : 'January' | 'February' | 'March' | 'April' | 'May' | 'June' | 'July' | 'August' | 'September' | 'October' | 'November' | 'December' ;
 
-WS        : ~[a-zA-Z0-9,.]+ ;
+WS        : ~[a-zA-Z0-9,.:]+ ;
